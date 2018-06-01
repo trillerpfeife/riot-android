@@ -16,7 +16,11 @@
 # limitations under the License.
 #
 
-listOfModifiedFiles=`git diff --name-only HEAD...$TRAVIS_BRANCH`
+echo ${TRAVIS_BRANCH}
+
+git status
+
+listOfModifiedFiles=`git diff --name-only HEAD...${TRAVIS_BRANCH}`
 
 echo "List of modified files by this PR:"
 echo ${listOfModifiedFiles}
