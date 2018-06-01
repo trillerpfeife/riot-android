@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 #
 # Copyright 2018 New Vector Ltd
 #
@@ -14,7 +16,7 @@
 # limitations under the License.
 #
 
-listOfModifiedFiles=`git diff --name-only HEAD master`
+listOfModifiedFiles=`git diff --name-only HEAD...$TRAVIS_BRANCH`
 
 echo "List of modified files by this PR:"
 echo ${listOfModifiedFiles}
