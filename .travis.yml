@@ -44,5 +44,5 @@ before_script:
 
 # Just build the project for now
 script:
-# - ./gradlew clean lintAppRelease assembleAppRelease --stacktrace
+ - ./gradlew clean lintAppRelease assembleAppRelease --stacktrace
  - ./tools/travis/check_pr.sh
