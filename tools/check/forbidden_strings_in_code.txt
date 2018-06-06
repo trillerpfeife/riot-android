@@ -132,3 +132,6 @@ invalidateOptionsMenu
 
 # Directly use getString() in a Fragment
 getActivity\(\)\.getString\(
+
+# Home menu click is managed in parent Activity, with one exception
+android\.R\.id\.home===2
