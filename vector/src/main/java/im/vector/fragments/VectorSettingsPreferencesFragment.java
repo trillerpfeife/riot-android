@@ -422,8 +422,8 @@ public class VectorSettingsPreferencesFragment extends PreferenceFragment implem
             keepMediaPeriodPreference.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
                 @Override
                 public boolean onPreferenceClick(Preference preference) {
-                    new AlertDialog.Builder(getActivity()).
-                            setSingleChoiceItems(PreferencesManager.getMediasSavingItemsChoicesList(getActivity()),
+                    new AlertDialog.Builder(getActivity())
+                            .setSingleChoiceItems(PreferencesManager.getMediasSavingItemsChoicesList(getActivity()),
                                     PreferencesManager.getSelectedMediasSavingPeriod(getActivity()),
                                     new DialogInterface.OnClickListener() {
                                         @Override
@@ -776,7 +776,6 @@ public class VectorSettingsPreferencesFragment extends PreferenceFragment implem
                                     useCryptoPref.setChecked(false);
                                 }
                             })
-                            .create()
                             .show();
                 } else {
                     boolean newValue = (boolean) newValueAsVoid;
@@ -1158,89 +1157,84 @@ public class VectorSettingsPreferencesFragment extends PreferenceFragment implem
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                AlertDialog.Builder alertDialog = new AlertDialog.Builder(getActivity());
                 final View view = getActivity().getLayoutInflater().inflate(R.layout.fragment_dialog_change_password, null);
-                alertDialog.setView(view);
-                alertDialog.setTitle(getString(R.string.settings_change_password));
 
                 final EditText oldPasswordText = view.findViewById(R.id.change_password_old_pwd_text);
                 final EditText newPasswordText = view.findViewById(R.id.change_password_new_pwd_text);
                 final EditText confirmNewPasswordText = view.findViewById(R.id.change_password_confirm_new_pwd_text);
 
-                // Setting Positive "Yes" Button
-                alertDialog.setPositiveButton(R.string.save, new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int which) {
-                        if (null != getActivity()) {
-                            InputMethodManager imm = (InputMethodManager) getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
-                            imm.hideSoftInputFromWindow(view.getApplicationWindowToken(), 0);
-                        }
-
-                        String oldPwd = oldPasswordText.getText().toString().trim();
-                        String newPwd = newPasswordText.getText().toString().trim();
-
-                        displayLoadingView();
-
-                        mSession.updatePassword(oldPwd, newPwd, new ApiCallback<Void>() {
-                            private void onDone(final int textId) {
-                                // check the activity still exists
+                AlertDialog dialog = new AlertDialog.Builder(getActivity())
+                        .setView(view)
+                        .setTitle(R.string.settings_change_password)
+                        .setPositiveButton(R.string.save, new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int which) {
                                 if (null != getActivity()) {
-                                    // and the code is called in the right thread
-                                    getActivity().runOnUiThread(new Runnable() {
-                                        @Override
-                                        public void run() {
-                                            hideLoadingView();
-                                            Toast.makeText(getActivity(),
-                                                    getString(textId),
-                                                    Toast.LENGTH_LONG).show();
+                                    InputMethodManager imm = (InputMethodManager) getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
+                                    imm.hideSoftInputFromWindow(view.getApplicationWindowToken(), 0);
+                                }
+
+                                String oldPwd = oldPasswordText.getText().toString().trim();
+                                String newPwd = newPasswordText.getText().toString().trim();
+
+                                displayLoadingView();
+
+                                mSession.updatePassword(oldPwd, newPwd, new ApiCallback<Void>() {
+                                    private void onDone(final int textId) {
+                                        // check the activity still exists
+                                        if (null != getActivity()) {
+                                            // and the code is called in the right thread
+                                            getActivity().runOnUiThread(new Runnable() {
+                                                @Override
+                                                public void run() {
+                                                    hideLoadingView();
+                                                    Toast.makeText(getActivity(),
+                                                            getString(textId),
+                                                            Toast.LENGTH_LONG).show();
+                                                }
+                                            });
                                         }
-                                    });
+                                    }
+
+                                    @Override
+                                    public void onSuccess(Void info) {
+                                        onDone(R.string.settings_password_updated);
+                                    }
+
+                                    @Override
+                                    public void onNetworkError(Exception e) {
+                                        onDone(R.string.settings_fail_to_update_password);
+                                    }
+
+                                    @Override
+                                    public void onMatrixError(MatrixError e) {
+                                        onDone(R.string.settings_fail_to_update_password);
+                                    }
+
+                                    @Override
+                                    public void onUnexpectedError(Exception e) {
+                                        onDone(R.string.settings_fail_to_update_password);
+                                    }
+                                });
+                            }
+                        })
+                        .setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int which) {
+                                if (null != getActivity()) {
+                                    InputMethodManager imm = (InputMethodManager) getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
+                                    imm.hideSoftInputFromWindow(view.getApplicationWindowToken(), 0);
                                 }
                             }
-
+                        })
+                        .setOnCancelListener(new DialogInterface.OnCancelListener() {
                             @Override
-                            public void onSuccess(Void info) {
-                                onDone(R.string.settings_password_updated);
+                            public void onCancel(DialogInterface dialog) {
+                                if (null != getActivity()) {
+                                    InputMethodManager imm = (InputMethodManager) getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
+                                    imm.hideSoftInputFromWindow(view.getApplicationWindowToken(), 0);
+                                }
                             }
-
-                            @Override
-                            public void onNetworkError(Exception e) {
-                                onDone(R.string.settings_fail_to_update_password);
-                            }
-
-                            @Override
-                            public void onMatrixError(MatrixError e) {
-                                onDone(R.string.settings_fail_to_update_password);
-                            }
-
-                            @Override
-                            public void onUnexpectedError(Exception e) {
-                                onDone(R.string.settings_fail_to_update_password);
-                            }
-                        });
-                    }
-                });
-
-                // Setting Negative "NO" Button
-                alertDialog.setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int which) {
-                        if (null != getActivity()) {
-                            InputMethodManager imm = (InputMethodManager) getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
-                            imm.hideSoftInputFromWindow(view.getApplicationWindowToken(), 0);
-                        }
-                    }
-                });
-
-                AlertDialog dialog = alertDialog.show();
-
-                dialog.setOnCancelListener(new DialogInterface.OnCancelListener() {
-                    @Override
-                    public void onCancel(DialogInterface dialog) {
-                        if (null != getActivity()) {
-                            InputMethodManager imm = (InputMethodManager) getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
-                            imm.hideSoftInputFromWindow(view.getApplicationWindowToken(), 0);
-                        }
-                    }
-                });
+                        })
+                        .show();
 
                 final Button saveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
                 saveButton.setEnabled(false);
@@ -1689,7 +1683,6 @@ public class VectorSettingsPreferencesFragment extends PreferenceFragment implem
                         dialog.dismiss();
                     }
                 })
-                .create()
                 .show();
     }
 
@@ -1770,7 +1763,6 @@ public class VectorSettingsPreferencesFragment extends PreferenceFragment implem
                                         dialog.dismiss();
                                     }
                                 })
-                                .create()
                                 .show();
 
                         return false;
@@ -1831,10 +1823,9 @@ public class VectorSettingsPreferencesFragment extends PreferenceFragment implem
                         preference.setOnPreferenceLongClickListener(new VectorCustomActionEditTextPreference.OnPreferenceLongClickListener() {
                             @Override
                             public boolean onPreferenceLongClick(Preference preference) {
-                                final String dialogMessage = getString(R.string.settings_delete_notification_targets_confirmation);
                                 new AlertDialog.Builder(getActivity())
                                         .setTitle(R.string.dialog_title_confirmation)
-                                        .setMessage(dialogMessage)
+                                        .setMessage(R.string.settings_delete_notification_targets_confirmation)
                                         .setPositiveButton(R.string.remove, new DialogInterface.OnClickListener() {
                                             @Override
                                             public void onClick(DialogInterface dialog, int which) {
@@ -1871,7 +1862,6 @@ public class VectorSettingsPreferencesFragment extends PreferenceFragment implem
                                                 dialog.dismiss();
                                             }
                                         })
-                                        .create()
                                         .show();
                                 return true;
                             }
@@ -2044,68 +2034,65 @@ public class VectorSettingsPreferencesFragment extends PreferenceFragment implem
      * @param pid the used pid.
      */
     private void showEmailValidationDialog(final ThreePid pid) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
-        builder.setTitle(R.string.account_email_validation_title);
-        builder.setMessage(R.string.account_email_validation_message);
-        builder.setPositiveButton(R.string._continue, new DialogInterface.OnClickListener() {
+        new AlertDialog.Builder(getActivity())
+                .setTitle(R.string.account_email_validation_title)
+                .setMessage(R.string.account_email_validation_message)
+                .setPositiveButton(R.string._continue, new DialogInterface.OnClickListener() {
 
-            public void onClick(DialogInterface dialog, int which) {
-                dialog.dismiss();
-                mSession.getMyUser().add3Pid(pid, true, new ApiCallback<Void>() {
-                    @Override
-                    public void onSuccess(Void info) {
-                        if (null != getActivity()) {
-                            getActivity().runOnUiThread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    hideLoadingView();
-                                    refreshEmailsList();
+                    public void onClick(DialogInterface dialog, int which) {
+                        dialog.dismiss();
+                        mSession.getMyUser().add3Pid(pid, true, new ApiCallback<Void>() {
+                            @Override
+                            public void onSuccess(Void info) {
+                                if (null != getActivity()) {
+                                    getActivity().runOnUiThread(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            hideLoadingView();
+                                            refreshEmailsList();
+                                        }
+                                    });
                                 }
-                            });
-                        }
-                    }
-
-                    @Override
-                    public void onNetworkError(Exception e) {
-                        onCommonDone(e.getLocalizedMessage());
-                    }
-
-                    @Override
-                    public void onMatrixError(MatrixError e) {
-                        if (TextUtils.equals(e.errcode, MatrixError.THREEPID_AUTH_FAILED)) {
-                            if (null != getActivity()) {
-                                getActivity().runOnUiThread(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        hideLoadingView();
-                                        Toast.makeText(getActivity(), getString(R.string.account_email_validation_error), Toast.LENGTH_SHORT).show();
-                                    }
-                                });
                             }
-                        } else {
-                            onCommonDone(e.getLocalizedMessage());
-                        }
+
+                            @Override
+                            public void onNetworkError(Exception e) {
+                                onCommonDone(e.getLocalizedMessage());
+                            }
+
+                            @Override
+                            public void onMatrixError(MatrixError e) {
+                                if (TextUtils.equals(e.errcode, MatrixError.THREEPID_AUTH_FAILED)) {
+                                    if (null != getActivity()) {
+                                        getActivity().runOnUiThread(new Runnable() {
+                                            @Override
+                                            public void run() {
+                                                hideLoadingView();
+                                                Toast.makeText(getActivity(), getString(R.string.account_email_validation_error), Toast.LENGTH_SHORT).show();
+                                            }
+                                        });
+                                    }
+                                } else {
+                                    onCommonDone(e.getLocalizedMessage());
+                                }
+                            }
+
+                            @Override
+                            public void onUnexpectedError(Exception e) {
+                                onCommonDone(e.getLocalizedMessage());
+                            }
+                        });
                     }
+                })
+                .setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener() {
 
                     @Override
-                    public void onUnexpectedError(Exception e) {
-                        onCommonDone(e.getLocalizedMessage());
+                    public void onClick(DialogInterface dialog, int which) {
+                        dialog.dismiss();
+                        hideLoadingView();
                     }
-                });
-            }
-        });
-
-        builder.setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener() {
-
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                dialog.dismiss();
-                hideLoadingView();
-            }
-        });
-
-        AlertDialog alert = builder.create();
-        alert.show();
+                })
+                .show();
     }
 
     //==============================================================================================================
@@ -2257,25 +2244,22 @@ public class VectorSettingsPreferencesFragment extends PreferenceFragment implem
     }
 
     private void displayTextSizeSelection(final Activity activity) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(activity);
         LayoutInflater inflater = activity.getLayoutInflater();
 
         View layout = inflater.inflate(R.layout.text_size_selection, null);
-        builder.setTitle(R.string.font_size);
-        builder.setView(layout);
 
-        builder.setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
-            public void onClick(DialogInterface dialog, int id) {
-            }
-        });
-
-        builder.setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener() {
-            public void onClick(DialogInterface dialog, int id) {
-            }
-        });
-
-        final AlertDialog dialog = builder.create();
-        dialog.show();
+        final AlertDialog dialog = new AlertDialog.Builder(activity)
+                .setTitle(R.string.font_size)
+                .setView(layout)
+                .setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                    }
+                })
+                .setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                    }
+                })
+                .show();
 
         LinearLayout linearLayout = layout.findViewById(R.id.text_selection_group_view);
 
@@ -2729,19 +2713,17 @@ public class VectorSettingsPreferencesFragment extends PreferenceFragment implem
                 textView.setVisibility(View.GONE);
             }
 
-            // title & icon
-            builder.setTitle(R.string.devices_details_dialog_title);
-            builder.setIcon(android.R.drawable.ic_dialog_info);
-            builder.setView(layout);
-
             final DeviceInfo fDeviceInfo = aDeviceInfo;
 
-            builder.setPositiveButton(R.string.rename, new DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(DialogInterface dialog, int which) {
-                    displayDeviceRenameDialog(fDeviceInfo);
-                }
-            });
+            builder.setTitle(R.string.devices_details_dialog_title)
+                    .setIcon(android.R.drawable.ic_dialog_info)
+                    .setView(layout)
+                    .setPositiveButton(R.string.rename, new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            displayDeviceRenameDialog(fDeviceInfo);
+                        }
+                    });
 
             // disable the deletion for our own device
             if (!TextUtils.equals(mSession.getCrypto().getMyDevice().deviceId, fDeviceInfo.device_id)) {
@@ -2753,25 +2735,24 @@ public class VectorSettingsPreferencesFragment extends PreferenceFragment implem
                 });
             }
 
-            builder.setNeutralButton(R.string.cancel, new DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(DialogInterface dialog, int which) {
-                    dialog.dismiss();
-                }
-            });
-
-            builder.setOnKeyListener(new DialogInterface.OnKeyListener() {
-                @Override
-                public boolean onKey(DialogInterface dialog, int keyCode, KeyEvent event) {
-                    if (event.getAction() == KeyEvent.ACTION_UP && keyCode == KeyEvent.KEYCODE_BACK) {
-                        dialog.cancel();
-                        return true;
-                    }
-                    return false;
-                }
-            });
-
-            builder.create().show();
+            builder
+                    .setNeutralButton(R.string.cancel, new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            dialog.dismiss();
+                        }
+                    })
+                    .setOnKeyListener(new DialogInterface.OnKeyListener() {
+                        @Override
+                        public boolean onKey(DialogInterface dialog, int keyCode, KeyEvent event) {
+                            if (event.getAction() == KeyEvent.ACTION_UP && keyCode == KeyEvent.KEYCODE_BACK) {
+                                dialog.cancel();
+                                return true;
+                            }
+                            return false;
+                        }
+                    })
+                    .show();
         } else {
             Log.e(LOG_TAG, "## displayDeviceDetailsDialog(): sanity check failure");
             if (null != getActivity())
@@ -2786,66 +2767,64 @@ public class VectorSettingsPreferencesFragment extends PreferenceFragment implem
      * @param aDeviceInfoToRename device info
      */
     private void displayDeviceRenameDialog(final DeviceInfo aDeviceInfoToRename) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
-        builder.setTitle(R.string.devices_details_device_name);
-
         final EditText input = new EditText(getActivity());
         input.setText(aDeviceInfoToRename.display_name);
-        builder.setView(input);
 
-        builder.setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                displayLoadingView();
-
-                mSession.setDeviceName(aDeviceInfoToRename.device_id, input.getText().toString(), new ApiCallback<Void>() {
+        new AlertDialog.Builder(getActivity())
+                .setTitle(R.string.devices_details_device_name)
+                .setView(input)
+                .setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
                     @Override
-                    public void onSuccess(Void info) {
-                        // search which preference is updated
-                        int count = mDevicesListSettingsCategory.getPreferenceCount();
+                    public void onClick(DialogInterface dialog, int which) {
+                        displayLoadingView();
 
-                        for (int i = 0; i < count; i++) {
-                            VectorCustomActionEditTextPreference pref = (VectorCustomActionEditTextPreference) mDevicesListSettingsCategory.getPreference(i);
+                        mSession.setDeviceName(aDeviceInfoToRename.device_id, input.getText().toString(), new ApiCallback<Void>() {
+                            @Override
+                            public void onSuccess(Void info) {
+                                // search which preference is updated
+                                int count = mDevicesListSettingsCategory.getPreferenceCount();
 
-                            if (TextUtils.equals(aDeviceInfoToRename.device_id, pref.getTitle())) {
-                                pref.setSummary(input.getText());
+                                for (int i = 0; i < count; i++) {
+                                    VectorCustomActionEditTextPreference pref = (VectorCustomActionEditTextPreference) mDevicesListSettingsCategory.getPreference(i);
+
+                                    if (TextUtils.equals(aDeviceInfoToRename.device_id, pref.getTitle())) {
+                                        pref.setSummary(input.getText());
+                                    }
+                                }
+
+                                // detect if the updated device is the current account one
+                                Preference pref = findPreference(PreferencesManager.SETTINGS_ENCRYPTION_INFORMATION_DEVICE_ID_PREFERENCE_KEY);
+                                if (TextUtils.equals(pref.getSummary(), aDeviceInfoToRename.device_id)) {
+                                    findPreference(PreferencesManager.SETTINGS_ENCRYPTION_INFORMATION_DEVICE_ID_PREFERENCE_KEY).setSummary(input.getText());
+                                }
+
+                                hideLoadingView();
                             }
-                        }
 
-                        // detect if the updated device is the current account one
-                        Preference pref = findPreference(PreferencesManager.SETTINGS_ENCRYPTION_INFORMATION_DEVICE_ID_PREFERENCE_KEY);
-                        if (TextUtils.equals(pref.getSummary(), aDeviceInfoToRename.device_id)) {
-                            findPreference(PreferencesManager.SETTINGS_ENCRYPTION_INFORMATION_DEVICE_ID_PREFERENCE_KEY).setSummary(input.getText());
-                        }
+                            @Override
+                            public void onNetworkError(Exception e) {
+                                onCommonDone(e.getLocalizedMessage());
+                            }
 
-                        hideLoadingView();
+                            @Override
+                            public void onMatrixError(MatrixError e) {
+                                onCommonDone(e.getLocalizedMessage());
+                            }
+
+                            @Override
+                            public void onUnexpectedError(Exception e) {
+                                onCommonDone(e.getLocalizedMessage());
+                            }
+                        });
                     }
-
+                })
+                .setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener() {
                     @Override
-                    public void onNetworkError(Exception e) {
-                        onCommonDone(e.getLocalizedMessage());
+                    public void onClick(DialogInterface dialog, int which) {
+                        dialog.cancel();
                     }
-
-                    @Override
-                    public void onMatrixError(MatrixError e) {
-                        onCommonDone(e.getLocalizedMessage());
-                    }
-
-                    @Override
-                    public void onUnexpectedError(Exception e) {
-                        onCommonDone(e.getLocalizedMessage());
-                    }
-                });
-            }
-        });
-        builder.setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                dialog.cancel();
-            }
-        });
-
-        builder.show();
+                })
+                .show();
     }
 
     /**
@@ -2895,52 +2874,48 @@ public class VectorSettingsPreferencesFragment extends PreferenceFragment implem
             if (!TextUtils.isEmpty(mAccountPassword)) {
                 deleteDevice(aDeviceInfoToDelete.device_id);
             } else {
-                android.support.v7.app.AlertDialog.Builder builder = new android.support.v7.app.AlertDialog.Builder(getActivity());
                 LayoutInflater inflater = getActivity().getLayoutInflater();
                 View layout = inflater.inflate(R.layout.devices_settings_delete, null);
 
-
                 final EditText passwordEditText = layout.findViewById(R.id.delete_password);
-                builder.setIcon(android.R.drawable.ic_dialog_alert);
-                builder.setTitle(R.string.devices_delete_dialog_title);
-                builder.setView(layout);
 
-                builder.setPositiveButton(R.string.devices_delete_submit_button_label, new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        if (null != mSession) {
-                            if (TextUtils.isEmpty(passwordEditText.toString())) {
-                                // FIXME Hardcoded string
-                                Toast.makeText(getActivity().getApplicationContext(), "Password missing..", Toast.LENGTH_SHORT).show();
-                                return;
+                new android.support.v7.app.AlertDialog.Builder(getActivity())
+                        .setIcon(android.R.drawable.ic_dialog_alert)
+                        .setTitle(R.string.devices_delete_dialog_title)
+                        .setView(layout)
+                        .setPositiveButton(R.string.devices_delete_submit_button_label, new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                if (null != mSession) {
+                                    if (TextUtils.isEmpty(passwordEditText.toString())) {
+                                        // FIXME Hardcoded string
+                                        Toast.makeText(getActivity().getApplicationContext(), "Password missing..", Toast.LENGTH_SHORT).show();
+                                        return;
+                                    }
+                                    mAccountPassword = passwordEditText.getText().toString();
+                                    deleteDevice(aDeviceInfoToDelete.device_id);
+                                }
                             }
-                            mAccountPassword = passwordEditText.getText().toString();
-                            deleteDevice(aDeviceInfoToDelete.device_id);
-                        }
-                    }
-                });
-
-                builder.setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        dialog.dismiss();
-                        hideLoadingView();
-                    }
-                });
-
-                builder.setOnKeyListener(new DialogInterface.OnKeyListener() {
-                    @Override
-                    public boolean onKey(DialogInterface dialog, int keyCode, KeyEvent event) {
-                        if (event.getAction() == KeyEvent.ACTION_UP && keyCode == KeyEvent.KEYCODE_BACK) {
-                            dialog.cancel();
-                            hideLoadingView();
-                            return true;
-                        }
-                        return false;
-                    }
-                });
-
-                builder.create().show();
+                        })
+                        .setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                dialog.dismiss();
+                                hideLoadingView();
+                            }
+                        })
+                        .setOnKeyListener(new DialogInterface.OnKeyListener() {
+                            @Override
+                            public boolean onKey(DialogInterface dialog, int keyCode, KeyEvent event) {
+                                if (event.getAction() == KeyEvent.ACTION_UP && keyCode == KeyEvent.KEYCODE_BACK) {
+                                    dialog.cancel();
+                                    hideLoadingView();
+                                    return true;
+                                }
+                                return false;
+                            }
+                        })
+                        .show();
             }
         } else {
             Log.e(LOG_TAG, "## displayDeviceDeletionDialog(): sanity check failure");
@@ -2952,9 +2927,9 @@ public class VectorSettingsPreferencesFragment extends PreferenceFragment implem
      */
     private void exportKeys() {
         View dialogLayout = getActivity().getLayoutInflater().inflate(R.layout.dialog_export_e2e_keys, null);
-        AlertDialog.Builder dialog = new AlertDialog.Builder(getActivity());
-        dialog.setTitle(R.string.encryption_export_room_keys);
-        dialog.setView(dialogLayout);
+        AlertDialog.Builder builder = new AlertDialog.Builder(getActivity())
+                .setTitle(R.string.encryption_export_room_keys)
+                .setView(dialogLayout);
 
         final TextInputEditText passPhrase1EditText = dialogLayout.findViewById(R.id.dialog_e2e_keys_passphrase_edit_text);
         final TextInputEditText passPhrase2EditText = dialogLayout.findViewById(R.id.dialog_e2e_keys_confirm_passphrase_edit_text);
@@ -2982,7 +2957,7 @@ public class VectorSettingsPreferencesFragment extends PreferenceFragment implem
 
         exportButton.setEnabled(false);
 
-        final AlertDialog exportDialog = dialog.show();
+        final AlertDialog exportDialog = builder.show();
 
         exportButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -3046,9 +3021,9 @@ public class VectorSettingsPreferencesFragment extends PreferenceFragment implem
         if (sharedDataItems.size() > 0) {
             final RoomMediaMessage sharedDataItem = sharedDataItems.get(0);
             View dialogLayout = getActivity().getLayoutInflater().inflate(R.layout.dialog_import_e2e_keys, null);
-            AlertDialog.Builder dialog = new AlertDialog.Builder(getActivity());
-            dialog.setTitle(R.string.encryption_import_room_keys);
-            dialog.setView(dialogLayout);
+            AlertDialog.Builder builder = new AlertDialog.Builder(getActivity())
+                    .setTitle(R.string.encryption_import_room_keys)
+                    .setView(dialogLayout);
 
             final TextInputEditText passPhraseEditText = dialogLayout.findViewById(R.id.dialog_e2e_keys_passphrase_edit_text);
             final Button importButton = dialogLayout.findViewById(R.id.dialog_e2e_keys_import_button);
@@ -3072,7 +3047,7 @@ public class VectorSettingsPreferencesFragment extends PreferenceFragment implem
 
             importButton.setEnabled(false);
 
-            final AlertDialog importDialog = dialog.show();
+            final AlertDialog importDialog = builder.show();
             final Context appContext = getActivity().getApplicationContext();
 
             importButton.setOnClickListener(new View.OnClickListener() {
